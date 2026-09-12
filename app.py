@@ -54,6 +54,15 @@ if (not SUPABASE_URL or not SUPABASE_KEY) and os.path.exists(_ENV_PATH):
 
 SUPABASE_TABLE = "elite_state"
 
+ADMIN_CODE = (os.environ.get("ADMIN_CODE") or "").strip()
+_ENV_PATH2 = os.path.join(BASE_DIR, ".env")
+if not ADMIN_CODE and os.path.exists(_ENV_PATH2):
+    with open(_ENV_PATH2, "r", encoding="utf-8") as _fh:
+        for _line in _fh:
+            _line = _line.strip()
+            if _line.startswith("ADMIN_CODE="):
+                ADMIN_CODE = _line.split("=", 1)[1].strip().strip('"').strip("'")
+
 
 # ----------------------------------------------------------------- storage
 
@@ -105,6 +114,20 @@ def supabase_save(data):
         return False
 
 
+def normalize_status(data):
+    """Backfill the `status` field on older stored data.
+
+    Legacy entries may lack `status`. Once a match has a winner, it used to be
+    auto-final; treat those as pre-approved so nothing is lost.
+    """
+    for bucket in (data.get("matches") or [], data.get("playoffs") or []):
+        for m in bucket:
+            if m.get("winner"):
+                m.setdefault("status", "approved")
+            else:
+                m.setdefault("status", None)
+
+
 def load_data():
     """Load state, always with a complete schedule: prefer Supabase, else local."""
     remote = None
@@ -120,6 +143,7 @@ def load_data():
         data = {"matches": [], "playoffs": []}
     try:
         config = load_config()
+        normalize_status(data)
         ensure_schedule(config, data)
         fill_playoff_teams(config, data)
         # persist any initialization so future loads see it
@@ -186,6 +210,7 @@ def build_schedule(config):
                     "winner": None,
                     "reported_by": None,
                     "reported_at": None,
+                    "status": None,
                 })
     return matches
 
@@ -195,13 +220,13 @@ def init_playoffs(config):
     gA, gB = groups[0], groups[1]
     return [
         {"id": "sf1", "stage": "Semifinal 1", "team1": None, "team2": None,
-         "winner": None, "reported_by": None, "reported_at": None,
+         "winner": None, "reported_by": None, "reported_at": None, "status": None,
          "source1": {"group": gA, "pos": 1}, "source2": {"group": gB, "pos": 2}},
         {"id": "sf2", "stage": "Semifinal 2", "team1": None, "team2": None,
-         "winner": None, "reported_by": None, "reported_at": None,
+         "winner": None, "reported_by": None, "reported_at": None, "status": None,
          "source1": {"group": gB, "pos": 1}, "source2": {"group": gA, "pos": 2}},
         {"id": "final", "stage": "Final", "team1": None, "team2": None,
-         "winner": None, "reported_by": None, "reported_at": None,
+         "winner": None, "reported_by": None, "reported_at": None, "status": None,
          "source1": {"match": "sf1"}, "source2": {"match": "sf2"}},
     ]
 
@@ -221,6 +246,7 @@ def ensure_schedule(config, data):
                 m["winner"] = s.get("winner")
                 m["reported_by"] = s.get("reported_by")
                 m["reported_at"] = s.get("reported_at")
+                m["status"] = s.get("status")
         data["matches"] = schedule
         return
     reported = {}
@@ -244,7 +270,7 @@ def compute_standings(config, matches):
              for g, teams in groups.items()}
     h2h = {}
     for m in matches:
-        if not m.get("winner") or m["group"] not in stats:
+        if not m.get("winner") or m.get("status") != "approved" or m["group"] not in stats:
             continue
         t1, t2 = m["team1"], m["team2"]
         if t1 not in stats[m["group"]] or t2 not in stats[m["group"]]:
@@ -296,7 +322,8 @@ def compute_bracket(config, matches, playoffs):
                     item["team1" if side == "source1" else "team2"] = rows[src["pos"] - 1]["team"]
             elif "match" in src:
                 parent = winners.get(src["match"])
-                if parent and parent.get("winner") and parent["team1"] and parent["team2"]:
+                if parent and parent.get("winner") and parent.get("status") == "approved" \
+                        and parent["team1"] and parent["team2"]:
                     winner = parent["team1"] if parent["winner"] == "team1" else parent["team2"]
                     item["team1" if side == "source1" else "team2"] = winner
         bracket.append(item)
@@ -321,9 +348,14 @@ def build_state():
     standings = compute_standings(config, data["matches"])
     bracket = compute_bracket(config, data["matches"], data["playoffs"])
     group_complete = {}
+    pending = []
     for g in config["groups"]:
         gms = [m for m in data["matches"] if m["group"] == g]
-        group_complete[g] = bool(gms) and all(m.get("winner") for m in gms)
+        group_complete[g] = bool(gms) and all(
+            m.get("winner") and m.get("status") == "approved" for m in gms)
+    for m in data["matches"] + data["playoffs"]:
+        if m.get("winner") and m.get("status") == "pending":
+            pending.append(m["id"])
     return {
         "config": {
             "league": config.get("league", "Elite Division"),
@@ -335,6 +367,7 @@ def build_state():
         "standings": standings,
         "playoffs": bracket,
         "group_complete": group_complete,
+        "pending": pending,
     }
 
 
@@ -363,6 +396,7 @@ def report_result(body):
     if winner not in ("team1", "team2"):
         raise ValueError("winner debe ser team1 o team2")
     slot["winner"] = winner
+    slot["status"] = "pending"
     slot["reported_by"] = (body.get("reporter") or "").strip() or "Anónimo"
     slot["reported_at"] = now_iso()
     save_data(data)
@@ -377,8 +411,52 @@ def undo_result(body):
     if slot is None:
         raise ValueError("partido no encontrado")
     slot["winner"] = None
+    slot["status"] = None
     slot["reported_by"] = None
     slot["reported_at"] = None
+    save_data(data)
+    return build_state()
+
+
+def _check_admin(body):
+    code = (body.get("admin_code") or "").strip()
+    if not ADMIN_CODE:
+        raise ValueError("código admin no configurado en el servidor")
+    if code != ADMIN_CODE:
+        raise ValueError("código admin incorrecto")
+
+
+def approve_result(body):
+    config = load_config()
+    data = load_data()
+    ensure_schedule(config, data)
+    _check_admin(body)
+    slot = find_slot(data, body.get("match_id"))
+    if slot is None:
+        raise ValueError("partido no encontrado")
+    if not slot.get("winner"):
+        raise ValueError("ese partido no tiene un resultado por aprobar")
+    slot["status"] = "approved"
+    slot["approved_at"] = now_iso()
+    save_data(data)
+    return build_state()
+
+
+def reject_result(body):
+    config = load_config()
+    data = load_data()
+    ensure_schedule(config, data)
+    _check_admin(body)
+    slot = find_slot(data, body.get("match_id"))
+    if slot is None:
+        raise ValueError("partido no encontrado")
+    if not slot.get("winner"):
+        raise ValueError("ese partido no tiene un resultado por rechazar")
+    slot["winner"] = None
+    slot["status"] = None
+    slot["reported_by"] = None
+    slot["reported_at"] = None
+    slot.pop("approved_at", None)
     save_data(data)
     return build_state()
 
@@ -432,7 +510,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path not in ("/api/report", "/api/undo"):
+        routes = {
+            "/api/report": report_result,
+            "/api/undo": undo_result,
+            "/api/admin/approve": approve_result,
+            "/api/admin/reject": reject_result,
+        }
+        if path not in routes:
             self._send_json({"error": "not found"}, 404)
             return
         try:
@@ -444,8 +528,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         with lock:
             try:
-                fn = report_result if path == "/api/report" else undo_result
-                self._send_json(fn(body))
+                self._send_json(routes[path](body))
             except ValueError as exc:
                 self._send_json({"error": str(exc)}, 400)
             except Exception as exc:

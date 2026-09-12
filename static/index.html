@@ -103,6 +103,7 @@
     <button class="tab" data-view="schedule">🗓️ Calendario</button>
     <button class="tab" data-view="bracket">🏆 Playoffs</button>
     <button class="tab" data-view="teams">👥 Equipos</button>
+    <button class="tab" data-view="admin">🛡️ Admin</button>
   </div>
 
   <section id="view-report">
@@ -134,6 +135,17 @@
   <section id="view-schedule" style="display:none"></section>
   <section id="view-bracket" style="display:none"></section>
   <section id="view-teams" style="display:none"></section>
+  <section id="view-admin" style="display:none">
+    <div class="card">
+      <h2><span class="dot"></span>Panel de administración</h2>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 6px">Los resultados reportados por los jugadores quedan <b>pendientes de aprobación</b>. Aquí puedes aprobarlos para que cuenten en la tabla y en playoffs, o rechazarlos.</p>
+      <label for="inpAdminCode">Código de administrador</label>
+      <input type="password" id="inpAdminCode" maxlength="40" placeholder="Código secreto de admin">
+      <div class="sep"></div>
+      <div id="adminPending"></div>
+      <div id="flashAdmin"></div>
+    </div>
+  </section>
 
   <footer>Elite Division · sitio provisional · los resultados se guardan al instante</footer>
 </div>
@@ -158,21 +170,32 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;",
 function statusLives(){
   const el=$("#lives");
   if(!STATE){el.textContent="sin conexión";el.className="lives err";return;}
-  const done=STATE.matches.filter(m=>m.winner).length;
-  el.textContent=done+"/"+STATE.matches.length+" reportados";
-  el.className="lives";
+  const approved=STATE.matches.filter(m=>m.winner&&m.status==="approved").length;
+  const reportados=STATE.matches.filter(m=>m.winner).length;
+  const total=STATE.matches.length;
+  const pend=(STATE.pending||[]).length;
+  el.textContent=approved+"/"+total+" aprobados"+(pend?" · ⏳ "+pend+" pendiente"+(pend>1?"s":""):"");
+  el.className="lives"+(pend?" hot":"");
+  const adminTab=$$(".tab").find(t=>t.dataset.view==="admin");
+  if(adminTab) adminTab.textContent="🛡️ Admin"+(pend?" ("+pend+")":"");
 }
 
 /* ---------------- groups view ---------------- */
+function groupPendingCount(g){
+  return (STATE.matches||[]).filter(m=>m.group===g&&m.winner&&m.status==="pending").length;
+}
 function renderGroupTables(){
   const root=$("#view-groups");
   let html="";
   for(const g of Object.keys(STATE.config.groups)){
     const rows=STATE.standings[g];
     const complete=STATE.group_complete[g];
+    const pendG=groupPendingCount(g);
     const top2=new Set(rows.slice(0,2).map(r=>r.team));
     html+='<div class="card"><h2><span class="dot"></span>Grupo '+esc(g)+
-      ' <span class="pill '+(complete?"ok":"")+'">'+(complete?"completo":"en juego")+'</span></h2>'+
+      ' <span class="pill '+(complete?"ok":"")+'">'+(complete?"completo":"en juego")+'</span>'+
+      (pendG?' <span class="pill" style="background:rgba(255,179,0,.12);color:#ffb300;border-color:rgba(255,179,0,.35)">⏳ '+pendG+' pendiente'+(pendG>1?"s":"")+' de aprobación</span>':"")+
+      '</h2>'+
       '<table><thead><tr><th class="num">#</th><th>Equipo</th><th class="num">J</th><th class="num">G</th><th class="num">P</th><th class="num">Pts</th></tr></thead><tbody>';
     for(const r of rows){
       html+='<tr><td class="num"><span class="rankb'+(top2.has(r.team)?" q":"")+'">'+r.rank+'</span></td>'+
@@ -186,16 +209,19 @@ function renderGroupTables(){
 }
 
 /* ---------------- schedule view ---------------- */
+function statusBadge(m){
+  if(!m.winner) return "";
+  if(m.status==="pending") return '<span class="pill" style="background:rgba(255,179,0,.12);color:#ffb300;border-color:rgba(255,179,0,.35)">⏳ pendiente</span>';
+  return '<span class="pill ok">✔ aprobado</span>';
+}
 function matchRow(m){
   const wn=m.winner?("team1"===m.winner?m.team1:m.team2):null;
-  return '<tr class="'+(m.winner?"done":"")+'">'+
+  return '<tr class="'+(m.winner&&m.status==="approved"?"done":"")+'">'+
     '<td class="num">'+esc(m.id)+'</td>'+
     '<td><span class="'+(wn===m.team1?"win":"lose")+'">'+esc(m.team1)+'</span></td>'+
     '<td style="text-align:center;width:60px"><span class="vs">vs</span></td>'+
     '<td><span class="'+(wn===m.team2?"win":"lose")+'">'+esc(m.team2)+'</span></td>'+
-    '<td style="text-align:right">'+(m.winner?
-      '<span class="pill ok">'+esc(m.reported_by||"listo")+'</span>':"")+
-    '</td></tr>';
+    '<td style="text-align:right">'+statusBadge(m)+'</td></tr>';
 }
 function renderSchedule(){
   const root=$("#view-schedule");
@@ -322,9 +348,10 @@ function updateWinnerSelect(){
   if(m.winner){
     const prev=m.winner==="team1"?m.team1:m.team2;
     w.value=m.winner;
-    $("#already").textContent="Ya reportado: ganó "+prev+(m.reported_by?" ("+esc(m.reported_by)+")":"")+". Puedes volver a guardar para corregir el resultado.";
+    const st=m.status==="approved"?"✔ Aprobado por admin.":"⏳ Pendiente de aprobación por un admin.";
+    $("#already").textContent="Ya reportado: ganó "+prev+(m.reported_by?" ("+esc(m.reported_by)+")":"")+". "+st+" Puedes volver a guardar para corregir el resultado.";
   } else {
-    $("#already").textContent="";
+    $("#already").textContent="Al guardar, el resultado quedará pendiente de aprobación por un admin y recién contará para la tabla cuando se apruebe.";
   }
 }
 function getSelectedMatch(){
@@ -369,6 +396,42 @@ function flash(msg,ok){
   el._t=setTimeout(()=>{el.style.display="none";},5000);
   void el.offsetWidth; el.style.display="block";
 }
+function flashAdmin(msg,ok){
+  const el=$("#flashAdmin");
+  el.textContent=msg; el.className=ok?"ok":"err";
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>{el.style.display="none";},5000);
+  void el.offsetWidth; el.style.display="block";
+}
+function adminCode(){return $("#inpAdminCode").value.trim();}
+function pendingList(){
+  const all=(STATE.matches||[]).concat(STATE.playoffs||[]);
+  return all.filter(m=>m.winner&&m.status==="pending");
+}
+function msLabel(m){
+  if(m.stage) return "#"+esc(m.id)+" · "+esc(m.stage);
+  return "#"+esc(m.id)+" · Jornada "+m.matchday+" · Grupo "+esc(m.group);
+}
+function renderAdminView(){
+  const root=$("#adminPending");
+  const pend=pendingList();
+  if(!pend.length){
+    root.innerHTML='<div style="font-size:13px;color:var(--muted);padding:10px 0">No hay resultados pendientes de aprobación. 🎉</div>';
+    return;
+  }
+  let html="<div style='font-size:13px;color:var(--muted);margin:0 0 8px'>"+pend.length+" resultado"+(pend.length>1?"s":"")+" esperando aprobación:</div>";
+  for(const m of pend){
+    const winner=m.winner==="team1"?m.team1:m.team2;
+    html+='<div class="card" style="padding:10px 12px;margin-bottom:8px">'+
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:2px">'+msLabel(m)+'</div>'+
+      '<div style="margin:6px 0"><b>'+esc(winner)+'</b> ganó · reportado por '+esc(m.reported_by||"Anónimo")+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn" data-act="approve" data-id="'+esc(m.id)+'">✔ Aprobar</button>'+
+      '<button class="btn gray" data-act="reject" data-id="'+esc(m.id)+'">✖ Rechazar</button>'+
+      '</div></div>';
+  }
+  root.innerHTML=html;
+}
 function currentPayload(){
   const m=$("#selMatch").value||"";
   const winner=$("#selWinner").value||"";
@@ -378,16 +441,18 @@ function currentPayload(){
 function showTab(v){
   currentView=v;
   $$(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===v));
-  ["report","groups","schedule","bracket","teams"].forEach(s=>$("#view-"+s).style.display=s===v?"block":"none");
+  ["report","groups","schedule","bracket","teams","admin"].forEach(s=>$("#view-"+s).style.display=s===v?"block":"none");
   if(v==="groups") renderGroupTables();
   if(v==="schedule") renderSchedule();
   if(v==="bracket") renderBracket();
   if(v==="teams") renderTeamsView();
+  if(v==="admin") renderAdminView();
 }
 function renderAll(){
   renderGroupTables(); renderSchedule(); renderBracket(); renderTeamsView();
   statusLives(); fillUndoSelect();
   if(currentView==="report"){fillMatchSelect();}
+  if(currentView==="admin"){renderAdminView();}
 }
 
 function refresh(){
@@ -425,6 +490,23 @@ $("#btnUndo").addEventListener("click",async()=>{
     STATE=j; renderAll();
     flash("Resultado quitado. Ya se puede reportar de nuevo.",true);
   }catch(e){flash("❌ "+e.message,false);}
+});
+$("#adminPending").addEventListener("click",async(ev)=>{
+  const btn=ev.target.closest("button[data-act]");
+  if(!btn) return;
+  const code=adminCode();
+  if(!code){flashAdmin("Escribe el código de administrador.",false);return;}
+  const {act,id}=btn.dataset;
+  btn.disabled=true;
+  const label=act==="approve"?"aprobado":"rechazado";
+  try{
+    const j=await api("/api/admin/"+act,{method:"POST",body:JSON.stringify({match_id:id,admin_code:code})});
+    STATE=j; renderAll();
+    flashAdmin("✅ Resultado "+label+".",true);
+  }catch(e){
+    flashAdmin("❌ "+e.message,false);
+    btn.disabled=false;
+  }
 });
 
 /* ---------------- init ---------------- */

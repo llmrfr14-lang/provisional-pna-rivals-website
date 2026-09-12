@@ -8,7 +8,8 @@
       "team2": "team bds",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m2",
@@ -18,7 +19,8 @@
       "team2": "ooh si nena",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m3",
@@ -28,7 +30,8 @@
       "team2": "ooh si nena",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m4",
@@ -38,7 +41,8 @@
       "team2": "Karmine corp",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m5",
@@ -48,7 +52,8 @@
       "team2": "Karmine corp",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m6",
@@ -58,7 +63,8 @@
       "team2": "team bds",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m7",
@@ -68,7 +74,8 @@
       "team2": "SUUHH",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m8",
@@ -78,7 +85,8 @@
       "team2": "ofi venados",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m9",
@@ -88,7 +96,8 @@
       "team2": "ofi venados",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m10",
@@ -98,7 +107,8 @@
       "team2": "ballchasing",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m11",
@@ -108,7 +118,8 @@
       "team2": "ballchasing",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     },
     {
       "id": "m12",
@@ -118,7 +129,8 @@
       "team2": "SUUHH",
       "winner": null,
       "reported_by": null,
-      "reported_at": null
+      "reported_at": null,
+      "status": null
     }
   ],
   "playoffs": [
@@ -127,6 +139,7 @@
       "stage": "Semifinal 1",
       "team1": "Karmine corp",
       "team2": "ballchasing",
+      "status": null,
       "winner": null,
       "source1": {
         "pos": 1,
@@ -144,6 +157,7 @@
       "stage": "Semifinal 2",
       "team1": "ADN",
       "team2": "Los espartanos",
+      "status": null,
       "winner": null,
       "source1": {
         "pos": 1,
@@ -161,6 +175,7 @@
       "stage": "Final",
       "team1": null,
       "team2": null,
+      "status": null,
       "winner": null,
       "source1": {
         "match": "sf1"
