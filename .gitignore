@@ -1,4 +1,5 @@
 .env
 *.tmp
 __pycache__/
-*.pycserver.log
+*.pyc
+server.log
