@@ -81,6 +81,9 @@
   #flash{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:14px;display:none}
   #flash.ok{display:block;background:rgba(46,160,67,.13);color:#3fb950;border:1px solid rgba(46,160,67,.4)}
   #flash.err{display:block;background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.4)}
+  #flashAdmin{margin:10px 0;padding:12px 14px;border-radius:10px;font-size:14px;display:none;font-weight:600}
+  #flashAdmin.ok{display:block;background:rgba(46,160,67,.13);color:#3fb950;border:1px solid rgba(46,160,67,.4)}
+  #flashAdmin.err{display:block;background:rgba(248,81,73,.14);color:#f85149;border:1px solid rgba(248,81,73,.5)}
   .lives{position:fixed;top:14px;right:16px;font-size:12px;color:var(--muted);z-index:5}
   .lives.err{color:#f85149}
   footer{margin-top:28px;color:var(--muted);font-size:12px;text-align:center}
@@ -141,6 +144,7 @@
       <p style="font-size:13px;color:var(--muted);margin:0 0 6px">Los resultados reportados por los jugadores quedan <b>pendientes de aprobación</b>. Aquí puedes aprobarlos para que cuenten en la tabla y en playoffs, o rechazarlos.</p>
       <label for="inpAdminCode">Código de administrador</label>
       <input type="password" id="inpAdminCode" maxlength="40" placeholder="Código secreto de admin">
+      <div style="font-size:12px;color:var(--muted);margin:4px 0 0">El código te lo da el organizador. Es obligatorio para aprobar o rechazar.</div>
       <div class="sep"></div>
       <div id="adminPending"></div>
       <div id="flashAdmin"></div>
@@ -156,6 +160,7 @@ const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
 let STATE=null;
 let currentView="report";
+let adminBusy=false;
 
 async function api(url,opts){
   const o=Object.assign({headers:{"Content-Type":"application/json"}},opts||{});
@@ -452,7 +457,7 @@ function renderAll(){
   renderGroupTables(); renderSchedule(); renderBracket(); renderTeamsView();
   statusLives(); fillUndoSelect();
   if(currentView==="report"){fillMatchSelect();}
-  if(currentView==="admin"){renderAdminView();}
+  if(currentView==="admin"&&!adminBusy){renderAdminView();}
 }
 
 function refresh(){
@@ -495,23 +500,31 @@ $("#adminPending").addEventListener("click",async(ev)=>{
   const btn=ev.target.closest("button[data-act]");
   if(!btn) return;
   const code=adminCode();
-  if(!code){flashAdmin("Escribe el código de administrador.",false);return;}
+  if(!code){
+    $("#inpAdminCode").focus();
+    flashAdmin("⚠️ Primero escribe el código de administrador arriba.",false);
+    return;
+  }
   const {act,id}=btn.dataset;
-  btn.disabled=true;
+  const original=btn.textContent;
+  btn.disabled=true; btn.textContent="Procesando…";
+  adminBusy=true;
   const label=act==="approve"?"aprobado":"rechazado";
   try{
     const j=await api("/api/admin/"+act,{method:"POST",body:JSON.stringify({match_id:id,admin_code:code})});
+    adminBusy=false;
     STATE=j; renderAll();
     flashAdmin("✅ Resultado "+label+".",true);
   }catch(e){
+    adminBusy=false;
     flashAdmin("❌ "+e.message,false);
-    btn.disabled=false;
+    btn.disabled=false; btn.textContent=original;
   }
 });
 
 /* ---------------- init ---------------- */
 refresh();
-setInterval(refresh,10000);
+setInterval(refresh,30000);
 </script>
 </body>
 </html>

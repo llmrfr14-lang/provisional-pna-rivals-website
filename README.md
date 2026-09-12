@@ -59,3 +59,14 @@ El campo `status` de cada partido puede ser `null`, `"pending"` o `"approved"`.
 Los resultados se guardan en la tabla `elite_state` (fila unica `id='state'` con
 `data` jsonb = `{matches, playoffs}`). Para crearla, correr `supabase_setup.sql`
 en el SQL Editor del proyecto. La app usa la `service_role` key via REST API.
+
+## Dos hosts (puertos 12000 y 12001)
+
+El sitio se sirve por dos URLs públicas, cada una mapeada a un puerto:
+
+- `work-1` → puerto `12000` (default)
+- `work-2` → puerto `12001` (levantar con `PORT=12001 python3 app.py`)
+
+Ambos comparten el mismo estado (Supabase / `data.json`). Si una URL da
+"Bad Gateway", es que el proceso de ese puerto se cayó; reiniciarlo con
+`nohup python3 app.py > server.log 2>&1 &` (o `PORT=12001 ...` para work-2).

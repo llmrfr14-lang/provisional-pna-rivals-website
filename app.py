@@ -528,6 +528,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         with lock:
             try:
+                print("REQ %s %s" % (self.command, path), flush=True)
                 self._send_json(routes[path](body))
             except ValueError as exc:
                 self._send_json({"error": str(exc)}, 400)
