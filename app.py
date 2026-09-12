@@ -426,6 +426,11 @@ def _check_admin(body):
         raise ValueError("código admin incorrecto")
 
 
+def verify_admin(body):
+    _check_admin(body)
+    return {"ok": True}
+
+
 def approve_result(body):
     config = load_config()
     data = load_data()
@@ -513,6 +518,7 @@ class Handler(BaseHTTPRequestHandler):
         routes = {
             "/api/report": report_result,
             "/api/undo": undo_result,
+            "/api/admin/verify": verify_admin,
             "/api/admin/approve": approve_result,
             "/api/admin/reject": reject_result,
         }

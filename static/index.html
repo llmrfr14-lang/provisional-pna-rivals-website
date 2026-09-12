@@ -143,8 +143,11 @@
       <h2><span class="dot"></span>Panel de administración</h2>
       <p style="font-size:13px;color:var(--muted);margin:0 0 6px">Los resultados reportados por los jugadores quedan <b>pendientes de aprobación</b>. Aquí puedes aprobarlos para que cuenten en la tabla y en playoffs, o rechazarlos.</p>
       <label for="inpAdminCode">Código de administrador</label>
-      <input type="password" id="inpAdminCode" maxlength="40" placeholder="Código secreto de admin">
-      <div style="font-size:12px;color:var(--muted);margin:4px 0 0">El código te lo da el organizador. Es obligatorio para aprobar o rechazar.</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="password" id="inpAdminCode" maxlength="40" placeholder="Código secreto de admin" style="flex:1;min-width:180px">
+        <button class="btn" id="btnVerifyAdmin" type="button">🔑 Verificar código</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin:4px 0 0">Primero verifica tu código; solo entonces podrás aprobar o rechazar.</div>
       <div class="sep"></div>
       <div id="adminPending"></div>
       <div id="flashAdmin"></div>
@@ -161,6 +164,7 @@ const $$=s=>Array.from(document.querySelectorAll(s));
 let STATE=null;
 let currentView="report";
 let adminBusy=false;
+let adminValidated=false;
 
 async function api(url,opts){
   const o=Object.assign({headers:{"Content-Type":"application/json"}},opts||{});
@@ -430,10 +434,15 @@ function renderAdminView(){
     html+='<div class="card" style="padding:10px 12px;margin-bottom:8px">'+
       '<div style="font-size:12px;color:var(--muted);margin-bottom:2px">'+msLabel(m)+'</div>'+
       '<div style="margin:6px 0"><b>'+esc(winner)+'</b> ganó · reportado por '+esc(m.reported_by||"Anónimo")+'</div>'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="btn" data-act="approve" data-id="'+esc(m.id)+'">✔ Aprobar</button>'+
-      '<button class="btn gray" data-act="reject" data-id="'+esc(m.id)+'">✖ Rechazar</button>'+
-      '</div></div>';
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+    if(adminValidated){
+      html+='<button class="btn" data-act="approve" data-id="'+esc(m.id)+'">✔ Aprobar</button>'+
+            '<button class="btn gray" data-act="reject" data-id="'+esc(m.id)+'">✖ Rechazar</button>'+
+            '<span style="font-size:12px;color:#3fb950">🔓 sesión de admin activa</span>';
+    }else{
+      html+='<span style="font-size:12px;color:var(--muted)">🔒 Verifica el código arriba para poder aprobar o rechazar.</span>';
+    }
+    html+='</div></div>';
   }
   root.innerHTML=html;
 }
@@ -496,13 +505,38 @@ $("#btnUndo").addEventListener("click",async()=>{
     flash("Resultado quitado. Ya se puede reportar de nuevo.",true);
   }catch(e){flash("❌ "+e.message,false);}
 });
-$("#adminPending").addEventListener("click",async(ev)=>{
-  const btn=ev.target.closest("button[data-act]");
-  if(!btn) return;
+$("#btnVerifyAdmin").addEventListener("click",async()=>{
   const code=adminCode();
   if(!code){
     $("#inpAdminCode").focus();
-    flashAdmin("⚠️ Primero escribe el código de administrador arriba.",false);
+    flashAdmin("⚠️ Primero escribe el código de administrador.",false);
+    return;
+  }
+  const btn=$("#btnVerifyAdmin");
+  const original=btn.textContent;
+  btn.disabled=true; btn.textContent="Verificando…";
+  adminBusy=true;
+  try{
+    await api("/api/admin/verify",{method:"POST",body:JSON.stringify({admin_code:code})});
+    adminBusy=false;
+    adminValidated=true;
+    $("#inpAdminCode").disabled=true;
+    btn.textContent="🔓 Verificado";
+    renderAdminView();
+    flashAdmin("✅ Código correcto. Ya puedes aprobar o rechazar.",true);
+  }catch(e){
+    adminBusy=false;
+    flashAdmin("❌ "+e.message,false);
+    btn.disabled=false; btn.textContent=original;
+  }
+});
+
+$("#adminPending").addEventListener("click",async(ev)=>{
+  const btn=ev.target.closest("button[data-act]");
+  if(!btn) return;
+  if(!adminValidated){
+    $("#inpAdminCode").focus();
+    flashAdmin("🔒 Primero verifica el código de administrador.",false);
     return;
   }
   const {act,id}=btn.dataset;
@@ -511,7 +545,7 @@ $("#adminPending").addEventListener("click",async(ev)=>{
   adminBusy=true;
   const label=act==="approve"?"aprobado":"rechazado";
   try{
-    const j=await api("/api/admin/"+act,{method:"POST",body:JSON.stringify({match_id:id,admin_code:code})});
+    const j=await api("/api/admin/"+act,{method:"POST",body:JSON.stringify({match_id:id,admin_code:adminCode()})});
     adminBusy=false;
     STATE=j; renderAll();
     flashAdmin("✅ Resultado "+label+".",true);

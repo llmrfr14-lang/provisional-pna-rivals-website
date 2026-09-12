@@ -14,7 +14,7 @@ todos contra todos, 3 pts por victoria; top 2 de cada grupo a semis y final).
 
 | Archivo              | Que es |
 |----------------------|--------|
-| `app.py`             | Servidor HTTP (stdlib). Endpoints `/`, `/api/state`, `/api/report`, `/api/undo`, `/api/admin/approve`, `/api/admin/reject` |
+| `app.py`             | Servidor HTTP (stdlib). Endpoints `/`, `/api/state`, `/api/report`, `/api/undo`, `/api/admin/verify`, `/api/admin/approve`, `/api/admin/reject` |
 | `static/index.html`  | Frontend de una sola pagina (tabs: Reportar / Grupos / Calendario / Playoffs / Equipos / Admin) |
 | `config.json`        | Config: grupos, rosters, puntos por victoria |
 | `data.json`          | Espejo local de resultados (se regenera solo) |
@@ -36,6 +36,8 @@ de entorno o del archivo `.env`. Si Supabase no esta disponible, guarda igual en
 
 - `POST /api/report` con `{match_id, winner, reporter}` guarda el resultado con
   `status: "pending"`. No afecta la tabla hasta que se apruebe.
+- `POST /api/admin/verify`  `{admin_code}` → valida el código de administrador.
+  El panel Admin exige este paso **antes** de mostrar los botones de aprobar/rechazar.
 - `POST /api/admin/approve`  `{match_id, admin_code}` → lo marca `approved` y
   recién ahí suma puntos / avanza en el bracket.
 - `POST /api/admin/reject`   `{match_id, admin_code}` → lo desmarca (se puede volver
@@ -49,6 +51,7 @@ de entorno o del archivo `.env`. Si Supabase no esta disponible, guarda igual en
 | GET    | `/api/state`         | —                                     |
 | POST   | `/api/report`        | `{match_id, winner, reporter}`        |
 | POST   | `/api/undo`          | `{match_id}`                          |
+| POST   | `/api/admin/verify`  | `{admin_code}`                        |
 | POST   | `/api/admin/approve` | `{match_id, admin_code}`              |
 | POST   | `/api/admin/reject`  | `{match_id, admin_code}`              |
 
