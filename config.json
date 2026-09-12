@@ -1,0 +1,18 @@
+{
+  "league": "Elite Division",
+  "points_per_win": 3,
+  "groups": {
+    "A": ["Los espartanos", "Karmine corp", "ooh si nena", "team bds"],
+    "B": ["ADN", "ballchasing", "ofi venados", "SUUHH"]
+  },
+  "rosters": {
+    "Los espartanos": {"captain": "Luis PTY507", "players": ["Luis PTY507", "angel_sparta507"]},
+    "ADN": {"captain": "Dasc2000", "players": ["Dasc2000", "bouche"]},
+    "Karmine corp": {"captain": "anthony8839", "players": ["anthony8839", "cocorl17"]},
+    "ballchasing": {"captain": "Chopodo chasing", "players": ["Chopodo chasing", "mgoals chasing"]},
+    "ooh si nena": {"captain": "aldaireyli.", "players": ["aldaireyli.", "uhhnav"]},
+    "ofi venados": {"captain": "sxm.15", "players": ["sxm.15", "angel_blazed"]},
+    "team bds": {"captain": "genji_13x", "players": ["genji_13x", "kana Arima."]},
+    "SUUHH": {"captain": "Hardpoint", "players": ["Hardpoint", "kai_sens"]}
+  }
+}

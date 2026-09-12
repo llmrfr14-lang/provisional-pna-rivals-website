@@ -1,0 +1,175 @@
+{
+  "matches": [
+    {
+      "id": "m1",
+      "group": "A",
+      "matchday": 1,
+      "team1": "Los espartanos",
+      "team2": "team bds",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m2",
+      "group": "A",
+      "matchday": 1,
+      "team1": "Karmine corp",
+      "team2": "ooh si nena",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m3",
+      "group": "A",
+      "matchday": 2,
+      "team1": "Los espartanos",
+      "team2": "ooh si nena",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m4",
+      "group": "A",
+      "matchday": 2,
+      "team1": "team bds",
+      "team2": "Karmine corp",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m5",
+      "group": "A",
+      "matchday": 3,
+      "team1": "Los espartanos",
+      "team2": "Karmine corp",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m6",
+      "group": "A",
+      "matchday": 3,
+      "team1": "ooh si nena",
+      "team2": "team bds",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m7",
+      "group": "B",
+      "matchday": 1,
+      "team1": "ADN",
+      "team2": "SUUHH",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m8",
+      "group": "B",
+      "matchday": 1,
+      "team1": "ballchasing",
+      "team2": "ofi venados",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m9",
+      "group": "B",
+      "matchday": 2,
+      "team1": "ADN",
+      "team2": "ofi venados",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m10",
+      "group": "B",
+      "matchday": 2,
+      "team1": "SUUHH",
+      "team2": "ballchasing",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m11",
+      "group": "B",
+      "matchday": 3,
+      "team1": "ADN",
+      "team2": "ballchasing",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    },
+    {
+      "id": "m12",
+      "group": "B",
+      "matchday": 3,
+      "team1": "ofi venados",
+      "team2": "SUUHH",
+      "winner": null,
+      "reported_by": null,
+      "reported_at": null
+    }
+  ],
+  "playoffs": [
+    {
+      "id": "sf1",
+      "stage": "Semifinal 1",
+      "team1": "Karmine corp",
+      "team2": "ballchasing",
+      "winner": null,
+      "source1": {
+        "pos": 1,
+        "group": "A"
+      },
+      "source2": {
+        "pos": 2,
+        "group": "B"
+      },
+      "reported_at": null,
+      "reported_by": null
+    },
+    {
+      "id": "sf2",
+      "stage": "Semifinal 2",
+      "team1": "ADN",
+      "team2": "Los espartanos",
+      "winner": null,
+      "source1": {
+        "pos": 1,
+        "group": "B"
+      },
+      "source2": {
+        "pos": 2,
+        "group": "A"
+      },
+      "reported_at": null,
+      "reported_by": null
+    },
+    {
+      "id": "final",
+      "stage": "Final",
+      "team1": null,
+      "team2": null,
+      "winner": null,
+      "source1": {
+        "match": "sf1"
+      },
+      "source2": {
+        "match": "sf2"
+      },
+      "reported_at": null,
+      "reported_by": null
+    }
+  ]
+}
