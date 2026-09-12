@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 server.log
 server2.log
+watchdog.sh
+watchdog.log
