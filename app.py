@@ -544,6 +544,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+    srv.daemon_threads = True  # a stuck request thread never blocks shutdown/health checks
     print("Elite Division provisional running on http://0.0.0.0:%d" % PORT, flush=True)
     srv.serve_forever()
 

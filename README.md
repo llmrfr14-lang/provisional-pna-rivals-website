@@ -70,6 +70,22 @@ El sitio se sirve por dos URLs públicas, cada una mapeada a un puerto:
 - `work-1` → puerto `12000` (default)
 - `work-2` → puerto `12001` (levantar con `PORT=12001 python3 app.py`)
 
-Ambos comparten el mismo estado (Supabase / `data.json`). Si una URL da
-"Bad Gateway", es que el proceso de ese puerto se cayó; reiniciarlo con
-`nohup python3 app.py > server.log 2>&1 &` (o `PORT=12001 ...` para work-2).
+Ambos comparten el mismo estado (Supabase / `data.json`).
+
+## No caerse (auto-reinicio)
+
+`watchdog.sh` monitorea ambos puertos cada 10s y reinicia el server que no
+responda, aguantando crashes, cuelgues y reinicios del contenedor. Los servers
+escriben su PID en `/tmp/elite_12000.pid` / `/tmp/elite_12001.pid` para que el
+watchdog sepa cuál proceso corresponde a cada puerto.
+
+- **Ordenar todo de cero** (mata instances viejas y levanta servers + watchdog):
+
+  ```bash
+  ./start_all.sh
+  ```
+
+- Logs: `server.log` (12000), `server2.log` (12001), `watchdog.log` (acciones del watchdog).
+
+Si una URL da "Bad Gateway", esperá ~15s: el watchdog ya debería haber reiniciado
+ese puerto. Si sigue caída, corré `./start_all.sh`.
