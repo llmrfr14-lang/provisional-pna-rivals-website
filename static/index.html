@@ -365,13 +365,17 @@ function updateWinnerSelect(){
 }
 function getSelectedMatch(){
   const v=$("#selMatch").value;
-  return (STATE.matches||[]).find(m=>m.id===v)||null;
+  return (STATE.matches||[]).find(m=>m.id===v)||(STATE.playoffs||[]).find(p=>p.id===v)||null;
+}
+function getSelectedPlayoff(){
+  const v=$("#selMatch").value;
+  return (STATE.playoffs||[]).find(p=>p.id===v)||null;
 }
 function fillUndoSelect(){
   const sel=$("#selUndo");
-  const done=(STATE.matches||[]).filter(m=>m.winner);
+  const done=(STATE.matches||[]).concat(STATE.playoffs||[]).filter(m=>m.winner);
   if(!done.length){sel.innerHTML='<option value="">No hay resultados aún</option>';return;}
-  sel.innerHTML=done.map(m=>'<option value="'+m.id+'">#'+m.id+' · '+esc(m.team1)+' vs '+esc(m.team2)+' (ganó '+
+  sel.innerHTML=done.map(m=>'<option value="'+m.id+'">'+(m.stage?('#'+esc(m.id)+' · '+esc(m.stage)):('#'+esc(m.id)+' · Jornada '+m.matchday+' · Grupo '+esc(m.group)))+' · '+esc(m.team1)+' vs '+esc(m.team2)+' (ganó '+
     (m.winner==="team1"?esc(m.team1):esc(m.team2))+' )</option>').join("");
 }
 function fillMatchForm(id){
