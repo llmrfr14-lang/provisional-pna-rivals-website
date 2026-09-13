@@ -353,6 +353,11 @@ function updateWinnerSelect(){
     return;
   }
   $("#matchPreview").innerHTML='<b>'+esc(m.team1)+'</b> <span class="vs">vs</span> <b>'+esc(m.team2)+'</b>';
+  if(!m.team1||!m.team2){
+    w.innerHTML='<option value="">Ambos equipos aún no están definidos</option>';
+    $("#already").textContent="Los equipos de este partido aún no están definidos.";
+    return;
+  }
   w.innerHTML='<option value="team1">'+esc(m.team1)+'</option><option value="team2">'+esc(m.team2)+'</option>';
   if(m.winner){
     const prev=m.winner==="team1"?m.team1:m.team2;
@@ -398,7 +403,6 @@ function fillPlayoffForm(slotId){
   const sel=$("#selMatch");
   sel.innerHTML='<option value="'+slot.id+'">'+esc(slot.stage)+' · '+(slot.team1?esc(slot.team1):"?")+' vs '+(slot.team2?esc(slot.team2):"?")+'</option>';
   updateWinnerSelect();
-  if(!slot.team1||!slot.team2){$("#already").textContent="Los equipos aún no están definidos.";}
 }
 
 /* ---------------- misc ---------------- */
